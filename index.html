@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>3D Elektrik Alan - Negatif Yük</title>
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <style>
+    .a-enter-vr { display: none !important; }
+  </style>
+</head>
+
+<body style="margin: 0; overflow: hidden;">
+
+<a-scene embedded
+  arjs="sourceType: webcam; debugUIEnabled: false;"
+  vr-mode-ui="enabled: false">
+
+  <a-marker preset="hiro">
+
+    <a-entity id="physics-model" position="0 0.4 0">
+
+      <!-- Negatif yüklü mavi küre -->
+      <a-sphere
+        radius="0.08"
+        color="#0000FF"
+        material="roughness: 0.1; metalness: 0.5">
+      </a-sphere>
+
+      <!-- Kürenin üzerinde belirgin negatif işareti -->
+      <a-text
+        value="-"
+        position="0 0.12 0.01"
+        align="center"
+        color="#FFFFFF"
+        width="3"
+        scale="2 2 2"
+        side="double">
+      </a-text>
+
+      <a-entity id="field-lines"></a-entity>
+
+    </a-entity>
+  </a-marker>
+
+  <a-entity camera></a-entity>
+</a-scene>
+
+<script>
+window.onload = () => {
+
+  const container = document.querySelector('#field-lines');
+
+  const numVectors = 32;
+  const fieldLength = 3;
+
+  for (let i = 0; i < numVectors; i++) {
+
+    // Fibonacci küresi
+    let y = 1 - (i / (numVectors - 1)) * 2;
+    let rAtY = Math.sqrt(1 - y * y);
+
+    let goldenAngle = Math.PI * (3 - Math.sqrt(5));
+    let theta = goldenAngle * i;
+
+    let x = Math.cos(theta) * rAtY;
+    let z = Math.sin(theta) * rAtY;
+
+    let dir = new THREE.Vector3(x, y, z).normalize();
+
+    let vectorGroup = document.createElement('a-entity');
+
+    // Uzun ve kesintisiz elektrik alan çizgisi
+    let line = document.createElement('a-cylinder');
+
+    line.setAttribute('radius', '0.003');
+    line.setAttribute('height', fieldLength);
+    line.setAttribute('color', '#FFD700');
+
+    // Çizginin merkezden dışarıya doğru uzanması
+    line.setAttribute('position', {
+      x: 0,
+      y: fieldLength / 2,
+      z: 0
+    });
+
+    // Ok ucu
+    let arrowHead = document.createElement('a-cone');
+
+    arrowHead.setAttribute('radius-bottom', '0.025');
+    arrowHead.setAttribute('radius-top', '0');
+    arrowHead.setAttribute('height', '0.10');
+    arrowHead.setAttribute('color', '#FFD700');
+
+    // Ok ucu çizginin dış ucunda
+    arrowHead.setAttribute('position', {
+      x: 0,
+      y: fieldLength,
+      z: 0
+    });
+
+    // Negatif yük: ok dış uçtan merkeze bakar
+    vectorGroup.addEventListener('loaded', () => {
+
+      let outward = dir.clone();
+
+      // Grup yerel +Y yönünü merkeze doğru çevir
+      let inward = outward.clone().negate();
+
+      vectorGroup.object3D.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        inward
+      );
+
+    });
+
+    vectorGroup.appendChild(line);
+    vectorGroup.appendChild(arrowHead);
+
+    container.appendChild(vectorGroup);
+  }
+
+};
+</script>
+
+</body>
+</html>
+
